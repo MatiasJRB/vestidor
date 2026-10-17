@@ -30,3 +30,9 @@ Cada recorte debe conservar color, corte, logos y lado de la prenda; mostrarlo c
 En **Outfits** está el apartado de importación. En local, configurá tu propio cliente con `npm run setup:google-photos`; el Picker permite elegir fotos puntuales. Importar fotos no detecta prendas por sí solo: el agente analiza las seleccionadas, prepara propuestas y la persona confirma.
 
 En Vercel ese conector sigue siendo local: el cartel lo explica y no ofrece un botón que no funciona. Como alternativa desde el celular, elegí las fotos descargadas/guardadas en tu galería con **Agregar prenda**. Iniciar sesión con Google no otorga permisos de Fotos.
+
+## Guardar y explorar outfits
+
+En **Outfits** hay dos colecciones separadas: **Generados por tu agente** (todas las propuestas, no sólo la última) y **Que usaste** (fotos reales). Ambas conservan la proporción de las fotos en una galería de columnas, con papelera y restauración independiente. Las prendas conservan una grilla pareja para comparar y filtrar.
+
+En local las propuestas van en `DATA_DIR/private/suggestions.json`, objeto `suggestions` con `id`, `for_date` (YYYY-MM-DD), `occasion`, `status: suggested`, `image` (ruta relativa `outfits/archivo.jpg`), `image_kind: ai_composite_from_inventory`, `item_ids` reales, `styling`, `reason` y `weather_assumption`. La imagen va en `DATA_DIR/public/outfits/`; aunque el directorio se llame public, requiere login por HTTP. No generes una recomendación de clima como si estuviera verificada. Conservá los datos existentes y `archived_at` si ya tiene valor. Respaldá antes de editar y recargá la página para ver propuestas nuevas. En cloud no hay todavía un endpoint de publicación de propuestas por agente: no sobreescribas el snapshot remoto para agregar una.

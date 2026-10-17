@@ -15,7 +15,6 @@ import {
   SpinnerGap,
   Sparkle,
   SquaresFour,
-  ThermometerSimple,
   X,
 } from '@phosphor-icons/react'
 import {
@@ -43,15 +42,6 @@ type Sort = 'used' | 'name' | 'category'
 
 const inventoryUpdatedLabel = new Intl.DateTimeFormat('es-AR', { dateStyle: 'long' }).format(new Date(inventoryUpdatedAt))
 
-function suggestionDateLabel(date: string) {
-  const target = new Date(`${date}T12:00:00`)
-  const today = new Date()
-  const localDay = (value: Date) => new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime()
-  const dayDifference = Math.round((localDay(target) - localDay(today)) / 86_400_000)
-  if (dayDifference === 0) return 'Para hoy'
-  if (dayDifference === 1) return 'Para mañana'
-  return 'Propuesta'
-}
 
 const categories = ['all', 'top', 'bottom', 'outerwear', 'shoes', 'accessory'] as const
 const categoryIcons = {
@@ -158,18 +148,18 @@ function App() {
         </nav>
       </header>
 
-      <section className="intro" id="top">
+      <section className={view === 'outfits' ? 'intro outfit-intro' : 'intro'} id="top">
         <div>
-          <h1>{view === 'review' ? 'Revisá las prendas antes de sumarlas.' : 'Tu ropa. Nuevas combinaciones.'}</h1>
+          <h1>{view === 'review' ? 'Revisá las prendas antes de sumarlas.' : view === 'outfits' ? 'Tus looks. Nuevas ideas.' : 'Tu ropa. Nuevas combinaciones.'}</h1>
         </div>
-        <div className="summary" aria-label="Resumen del inventario">
+        {view !== 'outfits' && <div className="summary" aria-label="Resumen del inventario">
           <div><strong>{wardrobeItems.length}</strong><span>prendas</span></div>
           <div><strong>{outfitCount}</strong><span>outfits</span></div>
           <div><strong>{generatedCount}</strong><span>recortes</span></div>
-        </div>
+        </div>}
       </section>
 
-      <div className="wardrobe-actions"><button className="primary-action" onClick={() => {setAdding(!adding);setView('items')}}><Plus/> Agregar prenda</button><button className="secondary-action" aria-pressed={imageFilter} onClick={() => {setImageFilter(!imageFilter);setView('items');setAdding(false)}}>Sin imagen de catálogo · {wardrobeItems.filter(i => !i.catalog_image).length}</button></div>
+      {view !== 'outfits' && <div className="wardrobe-actions"><button className="primary-action" onClick={() => {setAdding(!adding);setView('items')}}><Plus/> Agregar prenda</button><button className="secondary-action" aria-pressed={imageFilter} onClick={() => {setImageFilter(!imageFilter);setView('items');setAdding(false)}}>Sin imagen de catálogo · {wardrobeItems.filter(i => !i.catalog_image).length}</button></div>}
       {adding && <AddGarment onAdded={refreshInventory} onClose={() => setAdding(false)}/>}
       {!adding && (view === 'items' ? (
         <>
@@ -370,11 +360,12 @@ function OutfitGrid({ itemMap, onCountChange }: { itemMap: Map<string, WardrobeI
   const [entries, setEntries] = useState(outfits)
   const [ideas, setIdeas] = useState(suggestions)
   const [trash, setTrash] = useState(false)
+  const [collection, setCollection] = useState<'generated'|'worn'>('generated')
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
   useEffect(() => onCountChange(entries.filter(o => !o.archived_at && o.completeness !== 'not_an_outfit').length),[entries,onCountChange])
   const realOutfits = entries.filter(o => o.completeness !== 'not_an_outfit' && Boolean(o.archived_at) === trash)
-  const latestSuggestion = ideas.find(o => Boolean(o.archived_at) === trash)
+  const generatedOutfits = ideas.filter(o => Boolean(o.archived_at) === trash)
   async function archive(id:string,kind:'outfit'|'suggestion',archived:boolean){
     if(busy || (archived && !window.confirm('¿Mover este outfit a la papelera? Vas a poder restaurarlo.')))return
     setBusy(id);setError('')
@@ -387,56 +378,34 @@ function OutfitGrid({ itemMap, onCountChange }: { itemMap: Map<string, WardrobeI
 
   return (
     <section className="outfit-section">
-      <GooglePhotosImport />
-      <button className="secondary-action" onClick={()=>setTrash(!trash)}>{trash?'Volver a mis outfits':'Ver papelera'}</button>
+      <div className="outfit-collections" role="tablist" aria-label="Colecciones de outfits">
+        <button role="tab" aria-selected={collection === 'generated'} onClick={() => {setCollection('generated');setTrash(false)}}><Sparkle/> Generados por tu agente <span>{ideas.filter(i => !i.archived_at).length}</span></button>
+        <button role="tab" aria-selected={collection === 'worn'} onClick={() => {setCollection('worn');setTrash(false)}}><ImageSquare/> Que usaste <span>{entries.filter(o => !o.archived_at && o.completeness !== 'not_an_outfit').length}</span></button>
+      </div>
+      {collection === 'worn' && <GooglePhotosImport />}
+      <div className="outfit-heading"><p>{trash ? 'Papelera' : collection === 'generated' ? 'Ideas para volver a combinar tu ropa' : 'Tus looks, en fotos reales'}</p><button className="secondary-action" onClick={()=>setTrash(!trash)}>{trash?'Volver a la colección':'Ver papelera'}</button></div>
       {error && <p role="alert" className="form-error">{error}</p>}
-      {latestSuggestion && (
-        <article className="suggestion-card">
-          <div className="suggestion-image">
-            <img src={`/${latestSuggestion.image}`} alt={`Sugerencia para ${latestSuggestion.occasion.toLowerCase()}`} />
-            <span><Sparkle weight="fill" /> Idea generada con tu placard</span>
-          </div>
-          <div className="suggestion-copy">
-            <p className="suggestion-provenance"><Sparkle weight="fill" /> Composición IA con prendas reales del inventario</p>
-            <p className="suggestion-date">
-              {suggestionDateLabel(latestSuggestion.for_date)} · {new Date(`${latestSuggestion.for_date}T12:00:00`).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}
-            </p>
-            <h2>{latestSuggestion.occasion}</h2>
-            {deleteButton(latestSuggestion.id,'suggestion')}
-            <p className="suggestion-reason">{latestSuggestion.reason}</p>
-            <ol className="suggestion-items">
-              {latestSuggestion.item_ids.map((id) => {
-                const item = itemMap.get(id)
-                return item ? (
-                  <li key={id}>
-                    <img src={itemImage(item)} alt="" />
-                    <span>{itemName(item)}</span>
-                  </li>
-                ) : null
-              })}
-            </ol>
-            <p className="suggestion-styling">{latestSuggestion.styling}</p>
-            <p className="suggestion-weather"><ThermometerSimple /> {latestSuggestion.weather_assumption}</p>
-          </div>
-        </article>
-      )}
-      <div className="outfit-heading">
-        <p>{realOutfits.length} combinaciones registradas</p>
-        <span>Las fotos parciales no cuentan como outfit.</span>
-      </div>
-      <div className="outfit-grid">
-        {realOutfits.map((outfit) => (
-          <article key={outfit.id} className="outfit-card">
-            <img src={photoUrl(outfit.photo)} alt={`Outfit del ${new Date(outfit.captured_at).toLocaleDateString('es-AR')}`} loading="lazy" />
-            <div>
-              <time>{new Date(outfit.captured_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}</time>
-              {deleteButton(outfit.id,'outfit')}
-              <h2>{outfit.context.replace('/', ' + ')}</h2>
-              <p>{outfit.confirmed_items.map((id) => itemMap.get(id)).filter(Boolean).map((item) => item && itemName(item)).join(' · ')}</p>
+      {collection === 'generated' ? <>
+        {!generatedOutfits.length && <section className="empty-state"><Sparkle/><h2>{trash?'La papelera está vacía':'Tu próxima combinación empieza acá'}</h2><p>{trash?'Los outfits que borres se pueden restaurar desde acá.':'Las propuestas que tu agente guarde en Vestidor van a aparecer en esta colección. No se generan automáticamente.'}</p></section>}
+        <div className="outfit-grid generated-outfits">
+          {generatedOutfits.map(idea => <article className="outfit-card generated-outfit" key={idea.id}>
+            <a className="outfit-image-link" href={`/${idea.image}`} target="_blank" rel="noreferrer" aria-label={`Abrir imagen de ${idea.occasion}`}><img src={`/${idea.image}`} alt={`Outfit sugerido: ${idea.occasion}`} loading="lazy"/></a>
+            <div><p className="generated-note"><Sparkle/> Propuesta IA · prendas de tu inventario</p><h2>{idea.occasion}</h2><p>{idea.reason}</p>
+              <details className="outfit-recipe"><summary>Ver prendas y cómo usarlo</summary><ul>{idea.item_ids.map(id => {const item=itemMap.get(id);return item?<li key={id}>{itemName(item)}</li>:null})}</ul><p>{idea.styling}</p>{idea.weather_assumption && <p>{idea.weather_assumption}</p>}</details>
+              {deleteButton(idea.id,'suggestion')}
             </div>
-          </article>
-        ))}
-      </div>
+          </article>)}
+        </div>
+      </> : <>
+        {!realOutfits.length && <section className="empty-state"><ImageSquare/><h2>{trash?'La papelera está vacía':'Todavía no hay outfits registrados'}</h2><p>{trash?'Podés recuperar los outfits que borres desde esta colección.':'Acá van tus fotos de looks usados. Las propuestas IA están en Generados por tu agente.'}</p></section>}
+        <div className="outfit-grid">
+          {realOutfits.map(outfit => <article key={outfit.id} className="outfit-card">
+            <a className="outfit-image-link" href={photoUrl(outfit.photo)} target="_blank" rel="noreferrer"><img src={photoUrl(outfit.photo)} alt={`Outfit del ${new Date(outfit.captured_at).toLocaleDateString('es-AR')}`} loading="lazy"/></a>
+            <div><time>{new Date(outfit.captured_at).toLocaleDateString('es-AR',{day:'numeric',month:'short'})}</time><h2>{outfit.context.replace('/',' + ')}</h2><p>{outfit.confirmed_items.map(id => itemMap.get(id)).filter(Boolean).map(item => item && itemName(item)).join(' · ')}</p>{deleteButton(outfit.id,'outfit')}</div>
+          </article>)}
+        </div>
+      </>}
+
     </section>
   )
 }

@@ -15,7 +15,7 @@ Sacá una foto desde el celular, poné nombre, categoría y colores, y guardá. 
 - **Tu ropa real.** Cámara o galería; la foto ya sirve como imagen de la prenda.
 - **Encontrala de un vistazo.** Categorías, búsqueda, muestras de color y ejemplos visuales de cada estilo tomados de tu propio ropero.
 - **Confirmá antes de sumar.** Editá propuestas, vinculá prendas repetidas y separá fotos que no son de la misma pieza.
-- **Volvé a tus outfits.** Fotos y combinaciones vinculadas a prendas. Borrá lo que no querés; la papelera permite recuperarlo.
+- **Volvé a tus outfits.** Dos colecciones tipo Pinterest: **Generados por tu agente** y **Que usaste**, con imágenes sin recortar y prendas vinculadas. Borrá lo que no querés; la papelera permite recuperarlo.
 - **Mejorá las imágenes después.** Una prenda confirmada puede esperar su imagen IA sin desaparecer del inventario. Frente, espalda y foto original se conservan separados.
 - **Tu instancia es privada.** Login, fotos protegidas y datos fuera del código público. Un dueño por instalación; no es una red social.
 
