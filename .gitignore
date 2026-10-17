@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env*
+!.env.example
+data/
+private/
+.deploy/
+.railway/
+*.tsbuildinfo
+.DS_Store
