@@ -1,0 +1,7 @@
+data
+private
+.env*
+.git
+node_modules
+.railway
+.insforge

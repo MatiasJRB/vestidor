@@ -1,3 +1,4 @@
+import { renderLogin } from './login.ts'
 import { createServer } from 'node:http'
 import { readFile, mkdir, copyFile, stat, realpath, writeFile, rename } from 'node:fs/promises'
 import { resolve, join, extname, sep } from 'node:path'
@@ -7,7 +8,7 @@ import { createAuth } from './auth.ts'
 import { createWardrobeReviewHandler } from './wardrobeReview.ts'
 import { createGooglePhotosPickerHandler } from './googlePhotosPicker.ts'
 
-const loginPage = (message = '') => `<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#121510"><title>Entrar · Vestidor</title><style>body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#121510;color:#eef1e9;font:16px system-ui}main{width:min(360px,calc(100% - 48px))}small{color:#b6cd9e;letter-spacing:.14em}h1{font-size:48px;letter-spacing:-.05em;margin:18px 0}p{color:#b3bcad;line-height:1.6}label{display:block;margin:32px 0 10px}input,button{box-sizing:border-box;width:100%;min-height:50px;border-radius:12px;font:inherit;padding:12px 16px}input{background:#20251c;border:1px solid #57614c;color:#fff}button{margin-top:16px;background:#c0d9a8;color:#182011;border:0;font-weight:700;cursor:pointer}input:focus-visible,button:focus-visible{outline:3px solid #c0d9a8;outline-offset:3px}.error{color:#ffb4a9}</style><main><small>VESTIDOR · ACCESO PRIVADO</small><h1>Tu ropa.<br>Tu espacio.</h1><p>Entrá para ver tus prendas, combinar outfits y revisar lo nuevo.</p>${message ? `<p role="alert" class="error">${message}</p>` : ''}<form action="/auth/login" method="post"><label for="password">Contraseña</label><input id="password" name="password" type="password" autocomplete="current-password" required maxlength="256"><button>Entrar al placard</button></form><p>Tus fotos y prendas no son públicas.</p></main></html>`
+const loginPage = (message = '') => renderLogin({ message, google: process.env.AUTH_MODE === 'google', googleUrl: process.env.GOOGLE_LOGIN_URL ?? '/auth/google', configured: Boolean(process.env.GOOGLE_LOGIN_URL || process.env.GOOGLE_CLIENT_ID) })
 
 export async function createApp(options: { dataDir?: string; passwordHash: string; secure?: boolean; publicOrigin?: string; dev?: boolean; distDir?: string }) {
   const dataDir = resolve(options.dataDir ?? process.env.DATA_DIR ?? './data')

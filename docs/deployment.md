@@ -11,3 +11,13 @@
 - Los imports y la cola de generación persisten, pero identificar prendas y generar recortes requiere un trabajador externo/asistencia. Nunca marcar una tarea de generación completada sin revisar su imagen.
 - La ruta de migración de archivos está desactivada por defecto. ALLOW_DATA_IMPORT=true requiere contraseña válida, origen exacto y rutas permitidas. Deshabilitarla al finalizar; verificar 404 a posteriori.
 - `/healthz` sólo revela disponibilidad del proceso; no contiene inventario ni usuarios.
+
+## Vercel gratuito
+
+La edición cloud usa Functions + Blob privado, no el filesystem local ni el Dockerfile. `state/wardrobe.json` es un snapshot CAS (ETag) del ropero y `state/auth.json` guarda sesiones/flujos OAuth/rate limit. Nunca compartas BLOB_READ_WRITE_TOKEN con frontend.
+
+AUTH_MODE=google deshabilita acceso por contraseña. Sólo ALLOWED_GOOGLE_EMAIL, verificado criptográficamente y con email_verified=true, tiene acceso. PUBLIC_ORIGIN fija el callback canónico. Las otras aliases redirigen al origen canónico antes de empezar OAuth. No modificar una marca/cliente OAuth compartido para otro producto.
+
+Las funciones pueden ejecutarse en procesos distintos: no usar sesiones, límites ni locks sólo en memoria. El módulo Blob usa lecturas consistentes y reintentos de escrituras condicionales. Las fotos requieren autenticación junto a su lectura de Blob; no colocar un CDN público delante de los datos.
+
+Los scripts de sync respaldan snapshot remoto antes de reemplazarlo y conservan originales locales al optimizar. La UI cloud no tiene ruta de migración por HTTP habilitada. Importar datos sólo desde tooling local con el token privado del store.

@@ -52,7 +52,7 @@ export function GooglePhotosImport() {
       const next = await googlePhotosApi.status(controller.signal)
       setStatus(next)
       setStage('idle')
-      setMessage(next.connected ? 'Google Fotos conectado' : next.configured ? 'Falta autorizar tu cuenta una sola vez' : 'Falta la credencial OAuth local')
+      setMessage(next.localOnly ? 'La importación se hace desde tu instalación local.' : next.connected ? 'Google Fotos conectado' : next.configured ? 'Falta autorizar tu cuenta una sola vez' : 'Falta la credencial OAuth local')
     } catch (error) {
       if (controller.signal.aborted) return
       setStage('error')
@@ -160,8 +160,8 @@ export function GooglePhotosImport() {
       <div className="photo-import-lead">
         <span className="photo-import-icon"><GooglePhotosLogo weight="fill" /></span>
         <div>
-          <h2 id="photo-import-title">Traé esta semana desde Google Fotos.</h2>
-          <p>Elegís varias fotos, las descargamos en privado y sacamos las repetidas antes de inventariar.</p>
+          <h2 id="photo-import-title">{status?.localOnly ? 'Tu historial de outfits.' : 'Traé esta semana desde Google Fotos.'}</h2>
+          <p>{status?.localOnly ? 'Consultá tus fotos acá. Para sumar nuevas, importalas desde tu instalación local y sincronizá el ropero.' : 'Elegís varias fotos, las descargamos en privado y sacamos las repetidas antes de inventariar.'}</p>
         </div>
       </div>
       <div className="photo-import-action">
@@ -169,7 +169,7 @@ export function GooglePhotosImport() {
           {stage === 'done' ? <Check weight="bold" /> : stage === 'error' ? <WarningCircle weight="fill" /> : <CloudArrowDown />}
           <span>{message}</span>
         </p>
-        {!configured ? (
+        {status?.localOnly ? <small>El login con Google sólo sirve para entrar: no conecta tu biblioteca de fotos.</small> : !configured ? (
           <>
             <button onClick={refreshStatus} disabled={busy}><ArrowClockwise /> Revisar configuración</button>
             <small className="photo-import-setup">Primero ejecutá <code>npm run setup:google-photos -- /ruta/client_secret.json</code> en este proyecto.</small>

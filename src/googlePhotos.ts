@@ -1,4 +1,4 @@
-export type GooglePhotosStatus = { configured: boolean; connected: boolean; scope: string }
+export type GooglePhotosStatus = { configured: boolean; connected: boolean; scope?: string; localOnly?: boolean }
 export type PickerSession = { id: string; pickerUri: string; pollAfterMs: number; timeoutMs: number }
 export type PickerSessionStatus = { ready: boolean; pollAfterMs: number; timeoutMs: number }
 export type ImportResult = { selected: number; imported: number; duplicates: number; videosSkipped: number }

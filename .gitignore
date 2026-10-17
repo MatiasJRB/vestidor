@@ -8,3 +8,6 @@ private/
 .railway/
 *.tsbuildinfo
 .DS_Store
+.vercel/
+.insforge/
+.vercel

@@ -74,14 +74,15 @@ function App() {
 
   const refreshInventory = useCallback(async () => {
     const response = await fetch('/api/wardrobe-review/inventory', { headers: { Accept: 'application/json' } })
+    if (response.status === 401) { window.location.replace('/login'); return }
     if (!response.ok) return
     const body = await response.json() as { items: WardrobeItem[] }
     setWardrobeItems(body.items)
   }, [])
 
   useEffect(() => {
-    void refreshInventory()
-    const interval = window.setInterval(() => void refreshInventory(), 5_000)
+    void refreshInventory().catch(() => {})
+    const interval = window.setInterval(() => void refreshInventory().catch(() => {}), 60_000)
     return () => window.clearInterval(interval)
   }, [refreshInventory])
 

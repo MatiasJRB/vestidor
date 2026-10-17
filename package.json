@@ -17,14 +17,16 @@
   },
   "dependencies": {
     "@phosphor-icons/react": "latest",
+    "@vercel/blob": "^2.8.2",
+    "jose": "^6.2.12",
     "react": "latest",
     "react-dom": "latest",
     "tsx": "^4.20.0"
   },
   "devDependencies": {
+    "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "@types/node": "latest",
     "@vitejs/plugin-react": "latest",
     "sharp": "latest",
     "typescript": "latest",
