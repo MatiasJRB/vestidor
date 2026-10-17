@@ -20,11 +20,12 @@ const target = join(homedir(), '.config/vestidor/google-photos-client.json')
 await mkdir(dirname(target), { recursive: true })
 await copyFile(source, target)
 await chmod(target, 0o600)
-await writeFile('.env.local', [
-  `GOOGLE_PHOTOS_OAUTH_FILE=${target}`,
-  'GOOGLE_PHOTOS_REDIRECT_URI=http://127.0.0.1:4180/',
-  '',
-].join('\n'), { mode: 0o600 })
+const previous = await readFile('.env.local', 'utf8').catch(error => {
+  if (error.code === 'ENOENT') return ''
+  throw error
+})
+const preserved = previous.split('\n').filter(line => !/^GOOGLE_PHOTOS_(OAUTH_FILE|REDIRECT_URI)=/.test(line))
+await writeFile('.env.local', [...preserved, `GOOGLE_PHOTOS_OAUTH_FILE=${target}`, 'GOOGLE_PHOTOS_REDIRECT_URI=http://127.0.0.1:4180/', ''].join('\n'), { mode: 0o600 })
 
 console.log('Google Fotos quedó configurado localmente.')
 console.log(`Credencial protegida en: ${target}`)
