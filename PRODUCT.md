@@ -12,3 +12,6 @@ Agregar foto, nombre, categoría y colores; revisar propuestas; explorar prendas
 Código open source sin datos personales. Instancias privadas con login. La carga y el uso básico no requieren una API IA paga. Primero se brinda asistencia mediante el agente del usuario, no un chat IA embebido.
 ## Brand
 Vestidor. Conservar identidad de la aplicación; oscuro por defecto. Español claro e informal.
+
+## Garment gallery
+Las prendas también se muestran en columnas de altura variable, con imágenes completas sin recortar mangas ni piernas. El ancho de columna es consistente y la altura respeta la proporción de la foto.
