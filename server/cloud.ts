@@ -28,7 +28,7 @@ export function sameOrigin(request: IncomingMessage) {
  const host=request.headers['x-forwarded-host'] ?? request.headers.host
  return origin === `https://${host}` || (process.env.PUBLIC_ORIGIN !== undefined && origin === process.env.PUBLIC_ORIGIN)
 }
-const loginHtml = (message='') => renderLogin({ message, google: process.env.AUTH_MODE === 'google', configured: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) })
+const loginHtml = (message='') => renderLogin({ message, google: process.env.AUTH_MODE === 'google', configured: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.ALLOWED_GOOGLE_EMAIL && process.env.PUBLIC_ORIGIN) })
 function json(res: ServerResponse, code: number, data: unknown) {res.writeHead(code,{'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(data))}
 function redirect(res: ServerResponse, path: string) {res.writeHead(303,{Location:path});res.end()}
 async function body(req: IncomingMessage & {body?: unknown}) {
