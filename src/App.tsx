@@ -389,9 +389,9 @@ function OutfitGrid({ itemMap, onCountChange }: { itemMap: Map<string, WardrobeI
         {!generatedOutfits.length && <section className="empty-state"><Sparkle/><h2>{trash?'La papelera está vacía':'Tu próxima combinación empieza acá'}</h2><p>{trash?'Los outfits que borres se pueden restaurar desde acá.':'Las propuestas que tu agente guarde en Vestidor van a aparecer en esta colección. No se generan automáticamente.'}</p></section>}
         <div className="outfit-grid generated-outfits">
           {generatedOutfits.map(idea => <article className="outfit-card generated-outfit" key={idea.id}>
-            <a className="outfit-image-link" href={`/${idea.image}`} target="_blank" rel="noreferrer" aria-label={`Abrir imagen de ${idea.occasion}`}><img src={`/${idea.image}`} alt={`Outfit sugerido: ${idea.occasion}`} loading="lazy"/></a>
-            <div><p className="generated-note"><Sparkle/> Propuesta IA · prendas de tu inventario</p><h2>{idea.occasion}</h2><p>{idea.reason}</p>
-              <details className="outfit-recipe"><summary>Ver prendas y cómo usarlo</summary><ul>{idea.item_ids.map(id => {const item=itemMap.get(id);return item?<li key={id}>{itemName(item)}</li>:null})}</ul><p>{idea.styling}</p>{idea.weather_assumption && <p>{idea.weather_assumption}</p>}</details>
+            <a className="outfit-image-link" href={`/${idea.image}`} target="_blank" rel="noreferrer" aria-label={`Abrir imagen de ${idea.occasion}`}><img src={`/${idea.preview_image ?? idea.image}`} alt={`Outfit sugerido: ${idea.occasion}`} loading="lazy"/></a>
+            <div><p className="generated-note"><Sparkle/> {idea.item_ids.length ? 'Propuesta IA · prendas de tu inventario' : 'Propuesta IA · prendas por vincular'}</p><h2>{idea.occasion}</h2><p>{idea.reason}</p>
+              {(idea.item_ids.length > 0 || idea.styling || idea.weather_assumption) && <details className="outfit-recipe"><summary>Ver prendas y cómo usarlo</summary><ul>{idea.item_ids.map(id => {const item=itemMap.get(id);return item?<li key={id}>{itemName(item)}</li>:null})}</ul><p>{idea.styling}</p>{idea.weather_assumption && <p>{idea.weather_assumption}</p>}</details>}
               {deleteButton(idea.id,'suggestion')}
             </div>
           </article>)}

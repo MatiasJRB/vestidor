@@ -57,6 +57,7 @@ export type OutfitSuggestion = {
   occasion: string
   status: 'suggested'
   image: string
+  preview_image?: string
   image_kind: 'ai_composite_from_inventory'
   item_ids: string[]
   styling: string
