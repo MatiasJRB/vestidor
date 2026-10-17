@@ -1,3 +1,4 @@
+import type { GarmentFrame } from './garmentFrame'
 export type Category = 'top' | 'bottom' | 'outerwear' | 'shoes' | 'accessory'
 
 export type WardrobeItem = {
@@ -13,6 +14,7 @@ export type WardrobeItem = {
   seen_in: string[]
   primary_photo: string
   evidence_photos?: string[]
+  gallery_frame?: GarmentFrame
   catalog_image?: string
   catalog_views?: Array<{
     side: 'front' | 'back'

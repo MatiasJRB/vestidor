@@ -15,7 +15,8 @@
     "start": "node --env-file-if-exists=.env.local --import tsx server/app.ts",
     "password:hash": "tsx scripts/password-hash.ts",
     "setup": "node scripts/setup.mjs",
-    "doctor": "node scripts/doctor.mjs"
+    "doctor": "node scripts/doctor.mjs",
+    "catalog:frame": "node scripts/frame-catalog.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "latest",

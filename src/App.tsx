@@ -31,6 +31,7 @@ import {
   type Category,
   type WardrobeItem,
 } from './data'
+import { garmentFrameStyles } from './garmentFrame'
 import { AddGarment } from './AddGarment'
 import { ColorPicker } from './ColorPicker'
 import { api } from './api'
@@ -234,13 +235,14 @@ function App() {
 }
 
 function ItemCard({ item, onOpen }: { item: WardrobeItem; onOpen: () => void }) {
+  const frame = item.gallery_frame && itemImage(item) === `/items/${item.gallery_frame.image}` ? garmentFrameStyles(item.gallery_frame) : undefined
   const generated = Boolean(item.catalog_image)
   const generationStatus = item.catalog_generation_status
   const generating = generationStatus === 'queued' || generationStatus === 'generating'
   return (
     <article className="item-card">
-      <button className="item-image" onClick={onOpen} aria-label={`Ver detalle de ${itemName(item)}`}>
-        <img src={itemImage(item)} alt={itemName(item)} />
+      <button className="item-image" style={frame?.container} onClick={onOpen} aria-label={`Ver detalle de ${itemName(item)}`}>
+        <img src={itemImage(item)} alt={itemName(item)} style={frame?.image} />
         <span className={generated || generating ? 'image-label generated' : generationStatus === 'failed' ? 'image-label failed' : 'image-label'}>
           {generationStatus === 'generating' ? <SpinnerGap className="spin" /> : generationStatus === 'queued' ? <Sparkle/> : generated ? <Sparkle weight="fill" /> : generationStatus === 'failed' ? <X /> : <ImageSquare />}
           {generationStatus === 'queued' ? 'Imagen IA pendiente' : generationStatus === 'generating' ? 'Generando recorte' : generated ? 'IA por revisar' : generationStatus === 'failed' ? 'Falló el recorte' : 'Foto real'}

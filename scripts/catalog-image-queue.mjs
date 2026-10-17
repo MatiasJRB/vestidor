@@ -2,6 +2,7 @@
 import { chmod, mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, resolve } from 'node:path'
 import sharp from 'sharp'
+import {frameCatalogImage} from '../server/catalogFraming.ts'
 
 const root = resolve(process.env.DATA_DIR ?? 'data')
 const queuePath = resolve(root, 'private/catalog-generation-queue.json')
@@ -65,6 +66,7 @@ async function main() {
     const item = inventory.items.find((candidate) => candidate.id === job.item_id)
     if (!item) throw new Error(`No existe la prenda ${job.item_id}.`)
     item.catalog_image = basename(output)
+    item.gallery_frame = await frameCatalogImage(output, item.catalog_image)
     item.catalog_image_kind = 'ai_isolation_from_real_photo'
     item.catalog_image_review = 'pending_human_review'
     item.catalog_image_caution = 'Imagen reconstruida con IA. Validá logos, estampas, color y proporciones contra las fotos originales.'
