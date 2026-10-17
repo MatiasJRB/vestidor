@@ -1,13 +1,16 @@
 # Vestidor — guía para tu agente
 
-Si la persona dice **«quiero usar Vestidor»**, ayudala a tener SU ropero funcionando. No hace falta una API IA paga.
+Si la persona dice **«quiero usar Vestidor»**, ayudala a tener SU ropero funcionando. El objetivo por defecto es **sólo local**, en su computadora: no crear cuentas, no configurar hosting ni pedir claves de servicios externos. No requiere un editor específico ni una API IA paga.
 
 ## Instalación mínima
 1. Leé README.md y PRODUCT.md. Comprobá Node >=22.18 y el checkout correcto.
 2. Ejecutá `npm ci`, `npm run setup` y `npm run doctor`. Setup es idempotente: no pisa `.env.local`. Conservá la contraseña inicial sólo en un canal privado del dueño; nunca en commits, screenshots públicas ni logs de CI.
 3. Iniciá `npm run dev` con el supervisor disponible y abrí http://127.0.0.1:4180. Verificá la pantalla, no sólo el proceso.
 4. Guiá una primera carga con **Agregar prenda**. La foto real alcanza. Verificá que siga después de recargar.
-5. Para abrir desde el celular fuera de localhost, ofrecé una instancia HTTPS privada. No expongas un servidor local a Internet sin autorización. Consultá docs/deployment.md. No crees cuentas, cobros ni credenciales sin aprobación.
+5. Terminá cuando el ropero local esté verificado y la primera carga persista. No conviertas una instalación local en un despliegue web por iniciativa propia. Explicá que localhost sólo sirve en esa computadora.
+
+## Paso avanzado, sólo si la persona pide publicarlo
+Consultá docs/deployment.md: servidor Node persistente o Vercel + Blob privado + login Google. Son alternativas opcionales; no pedir ambas ni instalar InsForge. Usar cuentas propias del dueño, nunca proyectos del creador. No exponer el servidor local a Internet, crear cuentas, credenciales o cobros sin autorización. No es necesario abrir VS Code ni instalar un editor específico.
 
 ## Ayudar con la ropa
 - Usá datos de SU instalación, no ejemplos ni supuestos sobre posesión. Antes de recomendar, revisá todo el inventario relevante, no sólo lo último conversado.

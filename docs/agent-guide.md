@@ -2,9 +2,9 @@
 
 Copiá esto en Codex, Claude Code u otro agente con acceso a tu repositorio:
 
-> Quiero usar Vestidor. Leé AGENTS.md, instalalo y dejalo funcionando en privado. No contrates servicios pagos. Ayudame a cargar mi primera prenda y verificá que quedó guardada.
+> Quiero usar Vestidor en local, en mi computadora. Leé AGENTS.md, instalalo sin configurar hosting ni crear cuentas. Ayudame a cargar mi primera prenda y verificá que quedó guardada.
 
-El agente instala dependencias, prepara el acceso, inicia la app y guía la primera carga. **No es un chat integrado en la web**: es el agente que ya usás. Las autorizaciones de Google y las decisiones sobre cuentas/publicación siguen siendo tuyas.
+El agente instala dependencias, prepara el acceso local, inicia la app y guía la primera carga. Ahí termina el setup básico; publicar en Internet es otro pedido, opcional. **No es un chat integrado en la web**: es el agente que ya usás. Las autorizaciones de Google y las decisiones sobre cuentas/publicación siguen siendo tuyas.
 
 ## De una foto a una prenda
 
