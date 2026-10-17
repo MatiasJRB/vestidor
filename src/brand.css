@@ -1,0 +1,69 @@
+/* Matías Ríos portfolio · dark palette. Kept independent of wardrobe-photo colors. */
+:root {
+  color-scheme: dark;
+  --paper: #101419;
+  --surface: #171d23;
+  --surface-hover: #202a32;
+  --ink: #f1eee7;
+  --muted: #a5abb0;
+  --secondary-ink: #d2d3d0;
+  --line: #35424b;
+  --control-line: #657681;
+  --brand: #79cbb0;
+  --accent: #d7a05b;
+  --accent-hover: #e7b777;
+  --accent-soft: #332a20;
+  --on-accent: #101419;
+  --error: #e07c72;
+  --error-surface: #382326;
+  --success-surface: #19352f;
+  color: var(--ink);
+  background: var(--paper);
+}
+body, .site-header, .summary, .review-copy, .detail-copy { background: var(--paper); }
+::selection { background: var(--accent); color: var(--on-accent); }
+input, select { caret-color: var(--accent); }
+input::placeholder, .search input::placeholder { color: var(--muted); }
+.brand-mark { background: var(--brand); color: var(--on-accent); }
+.view-switch, .item-image, .detail-hero, .review-visual, .photo-import-icon { background: var(--surface); }
+.view-switch button { color: var(--secondary-ink); }
+.view-switch button.active, .filter-row button.active, .outfit-collections button[aria-selected=true],
+.primary-action, .app-loading button, .review-actions>.review-primary, .empty-state button {
+  background: var(--accent); color: var(--on-accent); border-color: transparent;
+}
+.primary-action:hover, .review-actions>.review-primary:hover, .empty-state button:hover { background: var(--accent-hover); }
+.review-count { color:var(--accent); background:var(--accent-soft); }
+.view-switch button.active .review-count { color:var(--on-accent); background:rgba(16,20,25,.12); }
+.search, .select-wrap, .filter-row button, .secondary-action, .file-button, .icon-action,
+.garment-fields input:not([type=checkbox]), .garment-fields select, .color-swatches button,
+.outfit-collections button, .review-field input, .review-field select, .review-form input, .review-form select,
+.review-link-existing select, .review-split, .logout-form button { border-color:var(--control-line); }
+.review-split, .review-link-existing, .review-actions>button, .review-link-existing button,
+.garment-view-switch, .close-button { background:var(--surface); color:var(--ink); }
+.review-actions>.review-primary { background:var(--accent); color:var(--on-accent); }
+.review-split:hover, .review-actions>button:hover, .review-link-existing button:hover { background:var(--surface-hover); color:var(--ink); }
+.review-actions>.review-primary:hover { background:var(--accent-hover); color:var(--on-accent); }
+.review-link-existing summary, .review-navigation button, .photo-import-status,
+.photo-import-lead p, .photo-import-action small, .image-caution p { color:var(--secondary-ink); }
+.review-navigation button:disabled { opacity:.5; }
+.review-note, .review-match, .photo-import, .image-caution, .image-caution.generation-pending {
+  color:var(--secondary-ink); background:var(--surface); border-color:var(--line);
+}
+.photo-import-icon { color:var(--brand); }
+.photo-import-action button, .photo-import-button { background:var(--accent); color:var(--on-accent); }
+.photo-import-action button:hover, .photo-import-button:hover { background:var(--accent-hover); }
+.photo-import-action .photo-import-cancel { color:var(--ink); background:transparent; border-color:var(--control-line); }
+.photo-import-action .photo-import-cancel:hover { background:var(--surface-hover); }
+.image-label, .image-label.generated, .confidence, .confidence-medium { background:var(--accent-soft); color:var(--accent); }
+.status { color:var(--brand); background:var(--success-surface); }
+.image-label.failed, .confidence-low, .review-error, .form-error, .photo-import.has-error,
+.image-caution.generation-failed { background:var(--error-surface); color:var(--error); border-color:var(--error); }
+.photo-import.has-error .photo-import-status, .photo-import.has-error small { color:var(--error); }
+.review-actions>.review-reject { background:transparent; color:var(--muted); }
+.review-actions>.review-reject:hover { background:var(--error-surface); color:var(--error); }
+.review-thumbnails button { border-color:var(--control-line); }
+.review-empty, .empty-state { border-color:var(--line); }
+.clear { color:var(--accent); background:var(--accent-soft); }
+.garment-view-switch button { color:var(--secondary-ink); }
+.garment-view-switch button[aria-pressed=true] { background:var(--accent); color:var(--on-accent); }
+.review-form input, .review-form select { color:var(--ink); background:var(--paper); }

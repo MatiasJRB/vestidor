@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { loadWardrobe } from './data'
 import './styles.css'
+import './brand.css'
 const root = createRoot(document.getElementById('root')!)
 root.render(<div className="app-loading" role="status">Abriendo tu placard…</div>)
 async function start() {
