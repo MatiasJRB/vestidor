@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -10,6 +10,7 @@ import {
   SpinnerGap,
   X,
 } from '@phosphor-icons/react'
+import { ColorPicker, colorPalette } from './ColorPicker'
 import {
   categoryLabels,
   itemName,
@@ -47,7 +48,9 @@ async function decide(candidateId: string, action: DecisionAction, existingId?: 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, existingId, edits }),
+    signal: AbortSignal.timeout(25000),
   })
+  if (response.status === 401) { window.location.assign('/login'); throw new Error('Tu sesión venció. Volvé a entrar.') }
   const body = await response.json() as ReviewResponse & { error?: { message?: string } }
   if (!response.ok) throw new Error(body.error?.message ?? 'No pude guardar la decisión.')
   return body
@@ -79,6 +82,7 @@ export function WardrobeReview({
   onInventoryChanged: () => Promise<void>
   onPendingChange: (count: number) => void
 }) {
+  const saving = useRef(false)
   const [queue, setQueue] = useState(initialReviewQueue)
   const [position, setPosition] = useState(0)
   const [photoIndex, setPhotoIndex] = useState(0)
@@ -98,7 +102,7 @@ export function WardrobeReview({
     fetch('/api/wardrobe-review', { headers: { Accept: 'application/json' } })
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((body: { items: ReviewCandidate[] }) => setQueue(body.items))
-      .catch(() => undefined)
+      .catch(() => setError('No pude actualizar las propuestas. Recargá la página para intentar de nuevo.'))
   }, [])
 
   useEffect(() => {
@@ -117,19 +121,21 @@ export function WardrobeReview({
   }, [candidate?.id])
 
   async function save(action: DecisionAction, existingId?: string) {
-    if (!candidate || busy) return
+    if (!candidate || saving.current) return
+    saving.current = true
     setBusy(action)
     setError('')
     try {
       const result = await decide(candidate.id, action, existingId, action === 'confirm_new' ? draft : undefined)
-      await onInventoryChanged()
       setQueue((current) => current.map((item) => item.id === candidate.id ? { ...item, status: result.status } : item))
       const nextPendingCount = pending.length - 1
+      void onInventoryChanged().catch(() => setNotice('Guardado. El inventario se actualizará al recargar.'))
       onPendingChange(result.pendingCount)
       setPosition((current) => nextPendingCount === 0 ? 0 : Math.min(current, nextPendingCount - 1))
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'No pude guardar la decisión.')
+      setError(caught instanceof Error ? (caught.name === 'TimeoutError' ? 'La respuesta tardó demasiado. Podés reintentar: no se duplicará la prenda.' : caught.message) : 'No pude guardar la decisión.')
     } finally {
+      saving.current = false
       setBusy(null)
     }
   }
@@ -239,10 +245,10 @@ export function WardrobeReview({
                 <span>Marca</span>
                 <input value={draft.brand} maxLength={60} placeholder="Opcional" onChange={(event) => setDraft((current) => ({ ...current, brand: event.target.value }))} />
               </label>
-              <label className="review-field-wide">
-                <span>Colores <small>separados por coma</small></span>
-                <input value={draft.colors.join(', ')} onChange={(event) => setDraft((current) => ({ ...current, colors: event.target.value.split(',') }))} />
-              </label>
+              <fieldset className="review-field-wide" disabled={Boolean(busy)} style={{border:0,padding:0,margin:0}}>
+                <legend>Colores</legend>
+                <ColorPicker values={[...new Set([...Object.keys(colorPalette),...draft.colors])]} selected={draft.colors} onChange={colors => setDraft(current => ({...current,colors}))} multiple/>
+              </fieldset>
             </div>
           </details>
 

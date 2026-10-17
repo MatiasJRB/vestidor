@@ -1,0 +1,5 @@
+export const colorPalette:Record<string,string>={negro:'#151515',blanco:'#fff',gris:'#929292',crudo:'#ede7d8',beige:'#c6b294',marrón:'#79513a',verde:'#59764b',oliva:'#767649',azul:'#426cba',celeste:'#91c4e0',rojo:'#c74242',bordó:'#79303e',amarillo:'#eed058',naranja:'#e58f43',rosa:'#dfa3b3',violeta:'#9a7ac4'}
+export function colorHex(value:string){const match=Object.keys(colorPalette).find(c=>value.includes(c));return colorPalette[match??'gris']}
+export function ColorPicker({values,selected,onChange,multiple=false}:{values:string[];selected:string[];onChange:(colors:string[])=>void;multiple?:boolean}){
+ return <div className="color-swatches" role="group" aria-label="Colores">{values.map(color=><button type="button" key={color} title={color} aria-label={color} aria-pressed={selected.includes(color)} onClick={()=>onChange(multiple?(selected.includes(color)?selected.filter(c=>c!==color):[...selected,color]):selected.includes(color)?[]:[color])}><span style={{background:colorHex(color)}}/>{color}</button>)}</div>
+}

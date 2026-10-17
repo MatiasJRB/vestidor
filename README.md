@@ -1,40 +1,61 @@
 # Vestidor
 
-Tu ropa, lista para volver a combinar. Una aplicación web de inventario personal: prendas, fotos de outfits, filtros, revisión asistida y vistas reconstruidas con IA claramente identificadas.
+![Vestidor: de una foto real a tu ropero](docs/assets/flow.svg)
 
-**React + TypeScript + Vite · Google login · Vercel Functions + Blob privado · edición local Node.js**
+## Toda tu ropa, en un lugar. Más ideas para usarla.
 
-## Para quién es
+Ese pantalón que siempre combinás igual. La remera que te olvidás que tenés. Las fotos de outfits que quedan perdidas en la galería. **Vestidor los junta en tu propio ropero digital.**
 
-Para quien quiere dejar de perder prendas en el fondo del placard y explorar combinaciones con lo que ya tiene. Esta edición es **single-owner**: un ropero por instalación, una contraseña de acceso. No es un servicio multiusuario ni una red social.
+Sacá una foto desde el celular, poné nombre, categoría y colores, y guardá. No necesitás recortar nada ni pagar una API de IA para empezar.
 
-## Arrancar en local
+[Empezar con mi agente](#decile-a-tu-agente-quiero-usar-vestidor) · [Instalar yo](#arrancar-en-local) · [Publicar en privado](docs/deployment.md) · [Cómo funciona](docs/agent-guide.md)
 
-Requiere Node.js 22.18 o posterior.
+### La experiencia
+
+- **Tu ropa real.** Cámara o galería; la foto ya sirve como imagen de la prenda.
+- **Encontrala de un vistazo.** Categorías, búsqueda, muestras de color y ejemplos visuales de cada estilo tomados de tu propio ropero.
+- **Confirmá antes de sumar.** Editá propuestas, vinculá prendas repetidas y separá fotos que no son de la misma pieza.
+- **Volvé a tus outfits.** Fotos y combinaciones vinculadas a prendas. Borrá lo que no querés; la papelera permite recuperarlo.
+- **Mejorá las imágenes después.** Una prenda confirmada puede esperar su imagen IA sin desaparecer del inventario. Frente, espalda y foto original se conservan separados.
+- **Tu instancia es privada.** Login, fotos protegidas y datos fuera del código público. Un dueño por instalación; no es una red social.
+
+### Decile a tu agente: «quiero usar Vestidor»
+
+Cloná el repositorio y abrilo con tu agente:
+
+```sh
+git clone https://github.com/MatiasJRB/vestidor.git
+cd vestidor
+```
+
+> Quiero usar Vestidor. Leé AGENTS.md, prepará la instalación privada sin contratar nada y ayudame a cargar mi primera prenda.
+
+[AGENTS.md](AGENTS.md) le da un recorrido verificable: instalar, preparar acceso, comprobar el entorno, abrir la app y acompañar tu primera carga. Después puede ayudarte a clasificar y proponer outfits usando **lo que realmente tenés**. El agente es el tuyo (Codex, Claude Code, etc.), no un chat IA incluido ni un servicio gratuito de generación ilimitada.
+
+### Arrancar en local
+
+Node.js **22.18+**:
 
 ```sh
 npm ci
-cp .env.example .env.local
-# Generá un hash de una contraseña larga; pegá el hash en ADMIN_PASSWORD_HASH de .env.local.
-printf '%s' 'elegi-una-frase-larga-y-unica' | npm run --silent password:hash
+npm run setup
+npm run doctor
 npm run dev
 ```
 
-Abrí `http://127.0.0.1:4180`. La contraseña no se guarda: sólo su derivación scrypt. La app se niega a iniciar si falta el hash. La sesión dura 12 horas y se invalida al reiniciar el proceso.
+Abrí `http://127.0.0.1:4180`. Setup muestra una contraseña inicial y guarda sólo su hash en `.env.local`; si ya existe configuración, no la pisa. Los datos arrancan vacíos en `data/`. No se incluyen fotos ni credenciales del creador.
 
-La primera ejecución crea un inventario vacío bajo `data/`. No se incluyen fotos, inventarios reales ni credenciales en este repositorio.
+**Desde el celular:** un `127.0.0.1` de tu computadora no es accesible desde el teléfono. Para usarlo desde cualquier lugar publicá tu propia instancia HTTPS con login; [guía de despliegue](docs/deployment.md).
 
-## Qué funciona
+### ¿Y la IA? ¿Y Google Fotos?
 
-- Galería responsive con búsqueda, categorías, estilo, colores y ficha de cada prenda.
-- Historial fotográfico de outfits y propuestas con prendas vinculadas.
-- Revisión de candidatas: editar nombre, marca, color y categoría, confirmar, vincular, separar evidencias o descartar.
-- Fotos de referencia separadas de imágenes reconstruidas con IA; vistas frente/dorso.
-- Cola persistente de recortes: confirmar una prenda encola el trabajo.
-- Integración opcional con Google Photos Picker, usando tu propio cliente OAuth.
-- Login privado, cookies HttpOnly/SameSite, protección same-origin, límite de intentos y archivos protegidos.
+La carga, los filtros y el inventario **no requieren IA**. Generar imágenes es opcional y necesita una herramienta de tu agente, un modelo local o una API (con sus propios costos). Marcar «pendiente» no enciende un servicio automático ni genera cobros.
 
-**No promete**: detectar prendas automáticamente al importar, generar imágenes sin un worker/modelo configurado, ni leer toda Google Fotos sin selección humana. La revisión visual y la generación IA necesitan un proceso asistido externo. Los recortes son simulaciones, no prueba exacta del calce.
+Google Photos Picker funciona en la instalación local con tu credencial y selección explícita. El despliegue Vercel no importa Google Fotos directamente ni sincroniza cambios automáticamente. El login Google sólo verifica tu identidad. [Flujos y límites reales](docs/agent-guide.md).
+
+### Para quienes construyen
+
+React · TypeScript · Vite · Node.js. Backend local persistente o Vercel Functions + Blob **privado**. Licencia MIT. `npm test` y `npm run build` antes de enviar cambios.
 
 ## Datos y respaldo
 
@@ -71,7 +92,7 @@ El despliegue cloud usa **Vercel Hobby + un Blob store privado**. No necesita In
 3. Creá un cliente OAuth Web en Google Cloud, con origen de tu app y redirect exacto `https://tu-app.vercel.app/auth/google/callback`.
 4. Configurá AUTH_MODE=google, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, PUBLIC_ORIGIN y ALLOWED_GOOGLE_EMAIL en Vercel. Sólo la dirección autorizada puede entrar; se exige email verificado.
 5. Desplegá. `vercel.json` envía APIs y medios privados a una Function que verifica la sesión antes de leer Blob.
-6. Prepará y sincronizá tu inventario local con los scripts de abajo. Revisá los datos y respaldos antes de reemplazar una instancia existente.
+6. Tu instancia arranca vacía: agregá prendas desde la web. Si migrás un inventario local, usá los scripts de abajo; revisá datos y respaldos antes de reemplazar una instancia existente.
 
 El login usa OAuth code flow con PKCE, estado vinculado al navegador, nonce y verificación criptográfica de ID tokens de Google. No solicita Gmail ni Google Fotos y no conserva tokens de Google. Las sesiones de Vestidor se guardan en Blob privado y se revocan al salir. Los cambios de revisión guardan inventario, revisión y cola de generación en un único snapshot con ETag/compare-and-swap para evitar sobrescrituras concurrentes.
 

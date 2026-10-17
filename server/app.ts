@@ -1,3 +1,5 @@
+import { parseItem, sanitizePhoto, addItem, uploadFingerprint, archiveOutfit } from './wardrobeActions.ts'
+import type { Snapshot } from './cloud.ts'
 import { renderLogin } from './login.ts'
 import { createServer } from 'node:http'
 import { readFile, mkdir, copyFile, stat, realpath, writeFile, rename } from 'node:fs/promises'
@@ -66,6 +68,32 @@ export async function createApp(options: { dataDir?: string; passwordHash: strin
         await rename(target + '.upload', target)
         return json(res, 200, { ok: true })
       }
+      const outfitAction = url.pathname.match(/^\/api\/outfits\/([^/]+)$/)
+      if ((url.pathname === '/api/wardrobe-items' && req.method === 'POST') || (outfitAction && req.method === 'PATCH')) {
+        let text = ''; for await (const chunk of req) { text += chunk; if (text.length > 3_200_000) return json(res,413,{error:'Foto demasiado grande'}) }
+        let input: any; try { input = JSON.parse(text) } catch { return json(res,400,{error:'Solicitud inválida'}) }
+        // Share the local mutation lock with review, so concurrent uploads cannot replace newer edits.
+        sequence = sequence.then(async () => {
+          try {
+            const names = ['inventory','review-queue','catalog-generation-queue','outfits','suggestions']
+            const [inventory,review,generation,outfits,suggestions] = await Promise.all(names.map(async name=>JSON.parse(await readFile(join(privateDir,name+'.json'),'utf8'))))
+            const state: Snapshot = {inventory,review,generation,outfits,suggestions}
+            let result: unknown
+            if (outfitAction) result=archiveOutfit(state,decodeURIComponent(outfitAction[1]),input,new Date().toISOString())
+            else {
+              const parsed=parseItem(input),photo=await sanitizePhoto(input.photo),fingerprint=uploadFingerprint(parsed,photo)
+              const key=`private/photos/${parsed.id}-${fingerprint.slice(0,16)}.jpg`
+              result=addItem(state,parsed,new Date().toISOString(),key,fingerprint)
+              await mkdir(join(privateDir,'photos'),{recursive:true,mode:0o700})
+              try{await writeFile(join(dataDir,key),photo,{mode:0o600,flag:'wx'})}catch(e){if((e as NodeJS.ErrnoException).code!=='EEXIST')throw e}
+            }
+            const changed=outfitAction?['outfits','suggestions']:['inventory','catalog-generation-queue']
+            for(const name of changed){const value=name==='inventory'?state.inventory:name==='catalog-generation-queue'?state.generation:name==='outfits'?state.outfits:state.suggestions;const target=join(privateDir,name+'.json');await writeFile(target+'.tmp',JSON.stringify(value,null,2),{mode:0o600});await rename(target+'.tmp',target)}
+            json(res,200,result)
+          }catch(error){json(res,typeof error==='object'&&error&&'status'in error?Number(error.status):500,{error:error instanceof Error?error.message:'No pude guardar'})}
+        }).catch(()=>{if(!res.writableEnded)json(res,500,{error:'No pude guardar'})})
+        await sequence; return
+      }
       if (url.pathname === '/api/bootstrap' && req.method === 'GET') {
         const [inventory, outfits, suggestions, review] = await Promise.all(['inventory', 'outfits', 'suggestions', 'review-queue'].map(async name => JSON.parse(await readFile(join(privateDir, `${name}.json`), 'utf8'))))
         return json(res, 200, { inventory, outfits, suggestions, review })
@@ -101,6 +129,6 @@ async function sendFile(res: import('node:http').ServerResponse, directory: stri
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const dev = process.argv.includes('--dev')
-  const app = await createApp({ passwordHash: process.env.ADMIN_PASSWORD_HASH ?? '', secure: !dev, publicOrigin: process.env.PUBLIC_ORIGIN, dev })
+  const app = await createApp({ passwordHash: process.env.ADMIN_PASSWORD_HASH ?? '', secure: !dev, publicOrigin: process.env.PUBLIC_ORIGIN || undefined, dev })
   app.server.listen(Number(process.env.PORT ?? 4180), dev ? '127.0.0.1' : '0.0.0.0', () => console.log('Vestidor listening'))
 }

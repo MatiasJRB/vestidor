@@ -242,7 +242,13 @@ export function applyCandidateDecision(
 ) {
   const candidate = queue.items.find((item) => item.id === candidateId)
   if (!candidate) throw new ReviewError('No encontré esa propuesta.', 404, 'CANDIDATE_NOT_FOUND')
-  if (candidate.status !== 'pending') throw new ReviewError('Esa propuesta ya fue resuelta.', 409, 'ALREADY_RESOLVED')
+  if (candidate.status !== 'pending') {
+    const prior = candidate.resolution
+    if (prior?.action === decision.action && (decision.action !== 'link_existing' || (decision.existingId ?? candidate.suggested_existing_id) === prior.item_id)) {
+      return { candidateId, status: candidate.status, itemId: prior.item_id, inventoryCount: inventory.items.length, pendingCount: queue.items.filter(i => i.status === 'pending').length }
+    }
+    throw new ReviewError('Esa propuesta ya fue resuelta. Actualizá la revisión.', 409, 'ALREADY_RESOLVED')
+  }
 
   if (!['confirm_new', 'link_existing', 'reject'].includes(decision.action)) {
     throw new ReviewError('La acción no es válida.', 400, 'INVALID_ACTION')
@@ -372,8 +378,9 @@ export function createWardrobeReviewHandler({ projectRoot }: { projectRoot: stri
         const candidate = queue.items.find((item) => item.id === candidateId)
         const decision = await readBody<ReviewDecision>(request)
         const now = new Date().toISOString()
+        const wasPending = candidate?.status === 'pending'
         const result = applyCandidateDecision(queue, inventory, candidateId, decision, now)
-        const generation = decision.action === 'confirm_new' && result.itemId && candidate
+        const generation = wasPending && decision.action === 'confirm_new' && result.itemId && candidate
           ? enqueueCatalogGeneration(generations, candidate, result.itemId, now)
           : undefined
         await writePrivateJson(inventoryFile, inventory)

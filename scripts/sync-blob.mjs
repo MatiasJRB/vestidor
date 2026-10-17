@@ -3,7 +3,7 @@ import { resolve, join } from 'node:path'
 import { get, put } from '@vercel/blob'
 if (!process.env.BLOB_READ_WRITE_TOKEN) throw new Error('Set BLOB_READ_WRITE_TOKEN privately; never commit it')
 const source=resolve(process.argv[2]??'.deploy/web-data'), replace=process.argv.includes('--replace')
-const existing=await get('state/wardrobe.json',{access:'private',useCache:false})
+const existing=await get('state/wardrobe.json',{access:'private',useCache:false,headers:{'Accept-Encoding':'identity'}})
 if(existing&&!replace)throw new Error('Remote wardrobe exists. Review remote changes before --replace; a backup will be saved locally.')
 if(existing?.statusCode===200&&existing.stream){await mkdir('.deploy',{recursive:true});await writeFile(`.deploy/remote-backup-${Date.now()}.json`,await new Response(existing.stream).text(),{mode:0o600})}
 const pending=[]

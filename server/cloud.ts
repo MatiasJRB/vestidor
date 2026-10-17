@@ -3,7 +3,8 @@ import { renderLogin } from './login.ts'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createHash, randomBytes } from 'node:crypto'
 import { Readable } from 'node:stream'
-import { get as blobGet } from '@vercel/blob'
+import { parseItem, sanitizePhoto, addItem, uploadFingerprint, archiveOutfit } from './wardrobeActions.ts'
+import { get as blobGet, put as blobPut } from '@vercel/blob'
 import { verifyPassword } from './auth.ts'
 import { readDocument as blobReadDocument, mutateDocument as blobMutateDocument } from './blobStore.ts'
 import { applyCandidateDecision, splitCandidateEvidence, enqueueCatalogGeneration } from './wardrobeReview.ts'
@@ -15,6 +16,7 @@ export type Snapshot = {
  outfits: { outfits: unknown[] }
  suggestions: { suggestions: unknown[] }
 }
+const emptySnapshot: Snapshot = { inventory: {version:1,updated_at:new Date().toISOString(),items:[]}, review:{version:1,generated_at:new Date().toISOString(),source_session_id:'manual',items:[]}, generation:{version:1,jobs:[]},outfits:{outfits:[]},suggestions:{suggestions:[]} }
 type AuthState = { attempts: number[]; sessions: Record<string, number>; oauth?: Record<string, OAuthFlow> }
 const emptyAuth: AuthState = { attempts: [], sessions: {} }
 const sessionDuration = 12 * 60 * 60_000
@@ -33,13 +35,14 @@ function json(res: ServerResponse, code: number, data: unknown) {res.writeHead(c
 function redirect(res: ServerResponse, path: string) {res.writeHead(303,{Location:path});res.end()}
 async function body(req: IncomingMessage & {body?: unknown}) {
  if(req.body !== undefined) return typeof req.body === 'string' ? req.body : req.body
- let text='';for await(const chunk of req){text+=chunk;if(text.length>64*1024)throw new Error('Request body too large')}return text
+ let text='';for await(const chunk of req){text+=chunk;if(text.length>3_200_000)throw Object.assign(new Error('Foto demasiado grande'),{status:413})}return text
 }
-function parseJson(value: unknown) {return typeof value==='string' ? JSON.parse(value) : value}
-export function createCloudHandler(overrides: { readDocument?: typeof blobReadDocument; mutateDocument?: typeof blobMutateDocument; get?: typeof blobGet } = {}) {
+function parseJson(value: unknown) {try{return typeof value==='string' ? JSON.parse(value) : value}catch{throw Object.assign(new Error('Solicitud JSON inválida'),{status:400})}}
+export function createCloudHandler(overrides: { readDocument?: typeof blobReadDocument; mutateDocument?: typeof blobMutateDocument; get?: typeof blobGet; put?: typeof blobPut } = {}) {
 const readDocument = overrides.readDocument ?? blobReadDocument
 const mutateDocument = overrides.mutateDocument ?? blobMutateDocument
 const get = overrides.get ?? blobGet
+const put = overrides.put ?? blobPut
 async function authenticated(req: IncomingMessage) {
  const token=readSessionToken(req)
  if(!/^[a-f0-9]{64}$/.test(token))return false
@@ -120,31 +123,51 @@ async function handleCloud(req: IncomingMessage & {body?: unknown},res: ServerRe
   if((media||evidence)&&req.method==='GET'){
    let key=''
    if(media)key=(media[1]==='media/photos'?'private/photos/':`public/${media[1]}/`)+media[2]
-   if(evidence){const {value}=await readDocument<Snapshot>('state/wardrobe.json');const photo=value.review.items.flatMap(i=>i.evidence_photos).find(p=>p.split('/').at(-1)===evidence[1]);if(!photo)return json(res,404,{error:'Foto no encontrada'});key=photo}
+   if(evidence){const {value}=await readDocument<Snapshot>('state/wardrobe.json',emptySnapshot);const photo=value.review.items.flatMap(i=>i.evidence_photos).find(p=>p.split('/').at(-1)===evidence[1]);if(!photo)return json(res,404,{error:'Foto no encontrada'});key=photo}
    const blob=await get(key,{access:'private'})
    if(!blob||blob.statusCode!==200||!blob.stream)return json(res,404,{error:'Foto no encontrada'})
    res.writeHead(200,{'Content-Type':blob.blob.contentType,'Cache-Control':'private, no-cache','ETag':blob.blob.etag})
    Readable.fromWeb(blob.stream as import('node:stream/web').ReadableStream).pipe(res);return
   }
-  if(path==='/api/bootstrap'&&req.method==='GET'){const {value}=await readDocument<Snapshot>('state/wardrobe.json');return json(res,200,{inventory:value.inventory,outfits:value.outfits,suggestions:value.suggestions,review:value.review})}
-  if(path==='/api/wardrobe-review/inventory'&&req.method==='GET'){const {value}=await readDocument<Snapshot>('state/wardrobe.json');return json(res,200,value.inventory)}
-  if(path==='/api/wardrobe-review'&&req.method==='GET'){const {value}=await readDocument<Snapshot>('state/wardrobe.json');return json(res,200,value.review)}
+  if(path==='/api/bootstrap'&&req.method==='GET'){const {value}=await readDocument<Snapshot>('state/wardrobe.json',emptySnapshot);return json(res,200,{inventory:value.inventory,outfits:value.outfits,suggestions:value.suggestions,review:value.review})}
+  if(path==='/api/wardrobe-review/inventory'&&req.method==='GET'){const {value}=await readDocument<Snapshot>('state/wardrobe.json',emptySnapshot);return json(res,200,value.inventory)}
+  if(path==='/api/wardrobe-review'&&req.method==='GET'){const {value}=await readDocument<Snapshot>('state/wardrobe.json',emptySnapshot);return json(res,200,value.review)}
+  if(path==='/api/wardrobe-items'&&req.method==='POST'){
+   const data=parseJson(await body(req)),input=parseItem(data)
+   const photo=await sanitizePhoto(data.photo),fingerprint=uploadFingerprint(input,photo)
+   const key=`private/photos/${input.id}-${fingerprint.slice(0,16)}.jpg`
+   // Immutable photo key: retries never overwrite an existing item's source image.
+   const current=await readDocument<Snapshot>('state/wardrobe.json',emptySnapshot)
+   if(!current.value.inventory.items.some(i=>i.id===input.id)){
+    try{await put(key,photo,{access:'private',addRandomSuffix:false,contentType:'image/jpeg'})}
+    catch(error){if(!/already exists/i.test(error instanceof Error?error.message:''))throw error}
+   }
+   const result=await mutateDocument<Snapshot,unknown>('state/wardrobe.json',emptySnapshot,state=>addItem(state,input,new Date().toISOString(),key,fingerprint))
+   return json(res,200,result)
+  }
+  const outfitAction=path.match(/^\/api\/outfits\/([^/]+)$/)
+  if(outfitAction&&req.method==='PATCH'){
+   const data=parseJson(await body(req))
+   const result=await mutateDocument<Snapshot,unknown>('state/wardrobe.json',emptySnapshot,state=>archiveOutfit(state,decodeURIComponent(outfitAction[1]),data,new Date().toISOString()))
+   return json(res,200,result)
+  }
   const split=path.match(/^\/api\/wardrobe-review\/([^/]+)\/split$/)
   const decision=path.match(/^\/api\/wardrobe-review\/([^/]+)$/)
   if(req.method==='POST'&&(split||decision)){
    const data=parseJson(await body(req))
-   const result=await mutateDocument<Snapshot,unknown>('state/wardrobe.json',undefined,state=>{
+   const result=await mutateDocument<Snapshot,unknown>('state/wardrobe.json',emptySnapshot,state=>{
     const now=new Date().toISOString()
     if(split)return splitCandidateEvidence(state.review,decodeURIComponent(split[1]),data.photo,now)
     const id=decodeURIComponent(decision![1]);const candidate=state.review.items.find(i=>i.id===id)
+    const wasPending=candidate?.status==='pending'
     const result=applyCandidateDecision(state.review,state.inventory,id,data,now)
-    const job=data.action==='confirm_new'&&result.itemId&&candidate?enqueueCatalogGeneration(state.generation,candidate,result.itemId,now):undefined
+    const job=wasPending&&data.action==='confirm_new'&&result.itemId&&candidate?enqueueCatalogGeneration(state.generation,candidate,result.itemId,now):undefined
     return {...result,generationStatus:job?.status}
    });return json(res,200,result)
   }
   if(path==='/api/google-photos/status'&&req.method==='GET')return json(res,200,{configured:false,connected:false,localOnly:true,reason:'La importación de Google Fotos se realiza desde tu instalación local y se sincroniza a la web.'})
   return json(res,404,{error:'Ruta no disponible'})
- }catch(error){const status=typeof error==='object'&&error!==null&&'status'in error?Number(error.status):500;console.error('[vestidor-cloud]',error instanceof Error?error.name:'error');return json(res,status>=400&&status<500?status:503,{error:{message:status>=400&&status<500&&error instanceof Error?error.message:'No pude conectar con tu ropero. Intentá de nuevo.'}})}
+ }catch(error){const status=typeof error==='object'&&error!==null&&'status'in error?Number(error.status):500;console.error('[vestidor-cloud]',{name:error instanceof Error?error.name:'error',code:typeof error==='object'&&error&&'code'in error?error.code:undefined,status});return json(res,status>=400&&status<500?status:503,{error:{message:status>=400&&status<500&&error instanceof Error?error.message:'No pude conectar con tu ropero. Intentá de nuevo.'}})}
 }
 
 return handleCloud

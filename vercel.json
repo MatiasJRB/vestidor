@@ -3,17 +3,60 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "functions": { "api/cloud.ts": { "maxDuration": 30, "memory": 1024 } },
+  "functions": {
+    "api/cloud.ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  },
   "rewrites": [
-    { "source": "/login", "destination": "/api/cloud?route=/login" },
-    { "source": "/auth/:path*", "destination": "/api/cloud?route=/auth/:path*" },
-    { "source": "/api/bootstrap", "destination": "/api/cloud?route=/api/bootstrap" },
-    { "source": "/api/wardrobe-review/:path*", "destination": "/api/cloud?route=/api/wardrobe-review/:path*" },
-    { "source": "/api/wardrobe-review", "destination": "/api/cloud?route=/api/wardrobe-review" },
-    { "source": "/api/google-photos/:path*", "destination": "/api/cloud?route=/api/google-photos/:path*" },
-    { "source": "/items/:path*", "destination": "/api/cloud?route=/items/:path*" },
-    { "source": "/outfits/:path*", "destination": "/api/cloud?route=/outfits/:path*" },
-    { "source": "/media/photos/:path*", "destination": "/api/cloud?route=/media/photos/:path*" },
-    { "source": "/healthz", "destination": "/api/cloud?route=/healthz" }
+    {
+      "source": "/login",
+      "destination": "/api/cloud?route=/login"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "/api/cloud?route=/auth/:path*"
+    },
+    {
+      "source": "/api/bootstrap",
+      "destination": "/api/cloud?route=/api/bootstrap"
+    },
+    {
+      "source": "/api/wardrobe-review/:path*",
+      "destination": "/api/cloud?route=/api/wardrobe-review/:path*"
+    },
+    {
+      "source": "/api/wardrobe-review",
+      "destination": "/api/cloud?route=/api/wardrobe-review"
+    },
+    {
+      "source": "/api/wardrobe-items",
+      "destination": "/api/cloud?route=/api/wardrobe-items"
+    },
+    {
+      "source": "/api/outfits/:path*",
+      "destination": "/api/cloud?route=/api/outfits/:path*"
+    },
+    {
+      "source": "/api/google-photos/:path*",
+      "destination": "/api/cloud?route=/api/google-photos/:path*"
+    },
+    {
+      "source": "/items/:path*",
+      "destination": "/api/cloud?route=/items/:path*"
+    },
+    {
+      "source": "/outfits/:path*",
+      "destination": "/api/cloud?route=/outfits/:path*"
+    },
+    {
+      "source": "/media/photos/:path*",
+      "destination": "/api/cloud?route=/media/photos/:path*"
+    },
+    {
+      "source": "/healthz",
+      "destination": "/api/cloud?route=/healthz"
+    }
   ]
 }

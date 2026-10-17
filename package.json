@@ -13,7 +13,9 @@
     "catalog:queue": "node scripts/catalog-image-queue.mjs list",
     "catalog:claim": "node scripts/catalog-image-queue.mjs claim",
     "start": "node --env-file-if-exists=.env.local --import tsx server/app.ts",
-    "password:hash": "tsx scripts/password-hash.ts"
+    "password:hash": "tsx scripts/password-hash.ts",
+    "setup": "node scripts/setup.mjs",
+    "doctor": "node scripts/doctor.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "latest",
@@ -21,14 +23,14 @@
     "jose": "^6.2.12",
     "react": "latest",
     "react-dom": "latest",
-    "tsx": "^4.20.0"
+    "tsx": "^4.20.0",
+    "sharp": "latest"
   },
   "devDependencies": {
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "@vitejs/plugin-react": "latest",
-    "sharp": "latest",
     "typescript": "latest",
     "vite": "latest"
   },

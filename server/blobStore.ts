@@ -1,11 +1,13 @@
 import { get, put, BlobPreconditionFailedError } from '@vercel/blob'
 export type Versioned<T> = { value: T; etag?: string }
-export async function readDocument<T>(key: string, fallback?: T): Promise<Versioned<T>> {
-  const blob = await get(key, { access: 'private', useCache: false })
+export async function readDocument<T>(key: string, fallback?: T, getBlob: typeof get = get): Promise<Versioned<T>> {
+  const blob = await getBlob(key, { access: 'private', useCache: false, headers: { 'Accept-Encoding': 'identity' } })
   if (!blob || blob.statusCode !== 200 || !blob.stream) {
     if (fallback !== undefined) return { value: structuredClone(fallback) }
     throw new Error('Missing private document')
   }
+  // Compression turns the storage ETag into a weak validator; If-Match needs the strong original.
+  if (!blob.blob.etag || blob.blob.etag.startsWith('W/')) throw new Error('Storage did not return a strong ETag')
   return { value: JSON.parse(await new Response(blob.stream).text()), etag: blob.blob.etag }
 }
 export async function writeDocument<T>(key: string, value: T, etag?: string) {

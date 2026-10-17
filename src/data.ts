@@ -40,6 +40,7 @@ export type ReviewCandidate = {
 }
 
 export type Outfit = {
+  archived_at?: string
   id: string
   captured_at: string
   photo: string
@@ -50,6 +51,7 @@ export type Outfit = {
 }
 
 export type OutfitSuggestion = {
+  archived_at?: string
   id: string
   for_date: string
   occasion: string

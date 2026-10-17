@@ -3,7 +3,9 @@ import {
   ArrowsDownUp,
   Check,
   CoatHanger,
-  FunnelSimple,
+  Plus,
+  Trash,
+  ArrowCounterClockwise,
   Eyeglasses,
   ImageSquare,
   ListChecks,
@@ -30,6 +32,9 @@ import {
   type Category,
   type WardrobeItem,
 } from './data'
+import { AddGarment } from './AddGarment'
+import { ColorPicker } from './ColorPicker'
+import { api } from './api'
 import { GooglePhotosImport } from './GooglePhotosImport'
 import { WardrobeReview } from './WardrobeReview'
 
@@ -58,6 +63,9 @@ const categoryIcons = {
 }
 
 function App() {
+  const [outfitCount, setOutfitCount] = useState(outfits.filter(o => !o.archived_at && o.completeness !== 'not_an_outfit').length)
+  const [adding, setAdding] = useState(false)
+  const [imageFilter, setImageFilter] = useState(false)
   const [view, setView] = useState<View>('items')
   const [category, setCategory] = useState<'all' | Category>('all')
   const [style, setStyle] = useState('all')
@@ -98,6 +106,7 @@ function App() {
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase('es')
     return wardrobeItems
+      .filter((item) => !imageFilter || !item.catalog_image)
       .filter((item) => category === 'all' || item.category === category)
       .filter((item) => style === 'all' || item.style_tags.includes(style))
       .filter((item) => color === 'all' || item.colors.includes(color))
@@ -114,13 +123,14 @@ function App() {
         if (sort === 'category') return a.category.localeCompare(b.category) || itemName(a).localeCompare(itemName(b))
         return itemName(a).localeCompare(itemName(b))
       })
-  }, [category, color, query, sort, style, wardrobeItems])
+  }, [category, color, query, sort, style, wardrobeItems, imageFilter])
 
   const generatedCount = wardrobeItems.filter((item) => item.catalog_image).length
   const currentItemById = useMemo(() => new Map(wardrobeItems.map((item) => [item.id, item])), [wardrobeItems])
   const activeFilters = Number(category !== 'all') + Number(style !== 'all') + Number(color !== 'all') + Number(Boolean(query))
 
   function clearFilters() {
+    setImageFilter(false)
     setCategory('all')
     setStyle('all')
     setColor('all')
@@ -150,17 +160,18 @@ function App() {
 
       <section className="intro" id="top">
         <div>
-          <p className="kicker">{view === 'review' ? 'Revisión asistida' : 'Inventario real'}</p>
-          <h1>{view === 'review' ? 'Encontré prendas nuevas. Confirmalas sin escribir nada.' : 'Tu ropa. Nuevas combinaciones.'}</h1>
+          <h1>{view === 'review' ? 'Revisá las prendas antes de sumarlas.' : 'Tu ropa. Nuevas combinaciones.'}</h1>
         </div>
         <div className="summary" aria-label="Resumen del inventario">
           <div><strong>{wardrobeItems.length}</strong><span>prendas</span></div>
-          <div><strong>{outfits.filter((outfit) => outfit.completeness !== 'not_an_outfit').length}</strong><span>outfits</span></div>
+          <div><strong>{outfitCount}</strong><span>outfits</span></div>
           <div><strong>{generatedCount}</strong><span>recortes</span></div>
         </div>
       </section>
 
-      {view === 'items' ? (
+      <div className="wardrobe-actions"><button className="primary-action" onClick={() => {setAdding(!adding);setView('items')}}><Plus/> Agregar prenda</button><button className="secondary-action" aria-pressed={imageFilter} onClick={() => {setImageFilter(!imageFilter);setView('items');setAdding(false)}}>Sin imagen de catálogo · {wardrobeItems.filter(i => !i.catalog_image).length}</button></div>
+      {adding && <AddGarment onAdded={refreshInventory} onClose={() => setAdding(false)}/>}
+      {!adding && (view === 'items' ? (
         <>
           <section className="toolbar" aria-label="Filtros del inventario">
             <label className="search">
@@ -191,23 +202,11 @@ function App() {
                 )
               })}
             </div>
-            <div className="compact-filters">
-              <label>
-                <FunnelSimple />
-                <select value={style} onChange={(event) => setStyle(event.target.value)} aria-label="Filtrar por estilo">
-                  <option value="all">Todos los estilos</option>
-                  {styles.map((value) => <option key={value}>{value}</option>)}
-                </select>
-              </label>
-              <label>
-                <span className="color-dot" />
-                <select value={color} onChange={(event) => setColor(event.target.value)} aria-label="Filtrar por color">
-                  <option value="all">Todos los colores</option>
-                  {colors.map((value) => <option key={value}>{value}</option>)}
-                </select>
-              </label>
-              {activeFilters > 0 && <button className="clear" onClick={clearFilters}>Limpiar {activeFilters}</button>}
-            </div>
+            <details className="visual-filters"><summary>Colores y estilos{activeFilters > 0 ? ` · ${activeFilters} filtros` : ''}</summary>
+              <div><h3>Color</h3><ColorPicker values={colors} selected={color === 'all' ? [] : [color]} onChange={values => setColor(values[0] ?? 'all')}/></div>
+              <div><h3>Estilo</h3><div className="style-options">{styles.map(value => {const example = wardrobeItems.find(i => i.style_tags.includes(value));return <button key={value} aria-pressed={style === value} onClick={() => setStyle(style === value ? 'all' : value)}>{example && <img src={itemImage(example)} alt={`Ejemplo de ${value}`} loading="lazy"/>}<span>{value}</span></button>})}</div></div>
+              {activeFilters > 0 && <button className="secondary-action" onClick={clearFilters}>Limpiar filtros</button>}
+            </details>
           </section>
 
           <div className="results-line">
@@ -229,10 +228,10 @@ function App() {
           )}
         </>
       ) : view === 'outfits' ? (
-        <OutfitGrid itemMap={currentItemById} />
+        <OutfitGrid itemMap={currentItemById} onCountChange={setOutfitCount} />
       ) : (
         <WardrobeReview inventoryItems={wardrobeItems} onInventoryChanged={refreshInventory} onPendingChange={setPendingReviewCount} />
-      )}
+      ))}
 
       <footer>
         <span>Tu inventario privado</span>
@@ -253,8 +252,8 @@ function ItemCard({ item, onOpen }: { item: WardrobeItem; onOpen: () => void }) 
       <button className="item-image" onClick={onOpen} aria-label={`Ver detalle de ${itemName(item)}`}>
         <img src={itemImage(item)} alt={itemName(item)} />
         <span className={generated || generating ? 'image-label generated' : generationStatus === 'failed' ? 'image-label failed' : 'image-label'}>
-          {generating ? <SpinnerGap className="spin" /> : generated ? <Sparkle weight="fill" /> : generationStatus === 'failed' ? <X /> : <ImageSquare />}
-          {generationStatus === 'queued' ? 'Recorte en cola' : generationStatus === 'generating' ? 'Generando recorte' : generated ? 'IA por revisar' : generationStatus === 'failed' ? 'Falló el recorte' : 'Foto real'}
+          {generationStatus === 'generating' ? <SpinnerGap className="spin" /> : generationStatus === 'queued' ? <Sparkle/> : generated ? <Sparkle weight="fill" /> : generationStatus === 'failed' ? <X /> : <ImageSquare />}
+          {generationStatus === 'queued' ? 'Imagen IA pendiente' : generationStatus === 'generating' ? 'Generando recorte' : generated ? 'IA por revisar' : generationStatus === 'failed' ? 'Falló el recorte' : 'Foto real'}
         </span>
       </button>
       <div className="item-copy">
@@ -327,7 +326,7 @@ function ItemDetail({ item, onClose }: { item: WardrobeItem; onClose: () => void
           {(item.catalog_generation_status === 'queued' || item.catalog_generation_status === 'generating') && (
             <div className="image-caution generation-pending">
               <SpinnerGap className="spin" />
-              <p>{item.catalog_generation_status === 'queued' ? 'Recorte IA en cola. Podés seguir revisando; aparecerá solo cuando esté listo.' : 'Generando el recorte IA desde la mejor foto real.'}</p>
+              <p>{item.catalog_generation_status === 'queued' ? 'Recorte IA en cola. La foto real ya está disponible. Tu agente puede procesar esta cola; no hay generación automática en la web.' : 'Generando el recorte IA desde la mejor foto real.'}</p>
             </div>
           )}
           {item.catalog_generation_status === 'failed' && (
@@ -367,12 +366,30 @@ function ItemDetail({ item, onClose }: { item: WardrobeItem; onClose: () => void
   )
 }
 
-function OutfitGrid({ itemMap }: { itemMap: Map<string, WardrobeItem> }) {
-  const realOutfits = outfits.filter((outfit) => outfit.completeness !== 'not_an_outfit')
-  const latestSuggestion = suggestions.at(0)
+function OutfitGrid({ itemMap, onCountChange }: { itemMap: Map<string, WardrobeItem>; onCountChange:(count:number)=>void }) {
+  const [entries, setEntries] = useState(outfits)
+  const [ideas, setIdeas] = useState(suggestions)
+  const [trash, setTrash] = useState(false)
+  const [busy, setBusy] = useState('')
+  const [error, setError] = useState('')
+  useEffect(() => onCountChange(entries.filter(o => !o.archived_at && o.completeness !== 'not_an_outfit').length),[entries,onCountChange])
+  const realOutfits = entries.filter(o => o.completeness !== 'not_an_outfit' && Boolean(o.archived_at) === trash)
+  const latestSuggestion = ideas.find(o => Boolean(o.archived_at) === trash)
+  async function archive(id:string,kind:'outfit'|'suggestion',archived:boolean){
+    if(busy || (archived && !window.confirm('¿Mover este outfit a la papelera? Vas a poder restaurarlo.')))return
+    setBusy(id);setError('')
+    try{await api(`/api/outfits/${encodeURIComponent(id)}`,{method:'PATCH',body:JSON.stringify({archived,kind})});
+      const update=<T extends {id:string;archived_at?:string},>(items:T[])=>items.map(i=>i.id===id?{...i,archived_at:archived?new Date().toISOString():undefined}:i)
+      if(kind==='outfit'){const next=update(entries);outfits.splice(0,outfits.length,...next);setEntries(next)}else{const next=update(ideas);suggestions.splice(0,suggestions.length,...next);setIdeas(next)}
+    }catch(e){setError((e as Error).message)}finally{setBusy('')}
+  }
+  function deleteButton(id:string,kind:'outfit'|'suggestion'){return <button className="secondary-action" disabled={Boolean(busy)} onClick={()=>void archive(id,kind,!trash)}>{trash?<ArrowCounterClockwise/>:<Trash/>}{busy===id?'Guardando…':trash?'Restaurar':'Borrar outfit'}</button>}
+
   return (
     <section className="outfit-section">
       <GooglePhotosImport />
+      <button className="secondary-action" onClick={()=>setTrash(!trash)}>{trash?'Volver a mis outfits':'Ver papelera'}</button>
+      {error && <p role="alert" className="form-error">{error}</p>}
       {latestSuggestion && (
         <article className="suggestion-card">
           <div className="suggestion-image">
@@ -385,6 +402,7 @@ function OutfitGrid({ itemMap }: { itemMap: Map<string, WardrobeItem> }) {
               {suggestionDateLabel(latestSuggestion.for_date)} · {new Date(`${latestSuggestion.for_date}T12:00:00`).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}
             </p>
             <h2>{latestSuggestion.occasion}</h2>
+            {deleteButton(latestSuggestion.id,'suggestion')}
             <p className="suggestion-reason">{latestSuggestion.reason}</p>
             <ol className="suggestion-items">
               {latestSuggestion.item_ids.map((id) => {
@@ -412,6 +430,7 @@ function OutfitGrid({ itemMap }: { itemMap: Map<string, WardrobeItem> }) {
             <img src={photoUrl(outfit.photo)} alt={`Outfit del ${new Date(outfit.captured_at).toLocaleDateString('es-AR')}`} loading="lazy" />
             <div>
               <time>{new Date(outfit.captured_at).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}</time>
+              {deleteButton(outfit.id,'outfit')}
               <h2>{outfit.context.replace('/', ' + ')}</h2>
               <p>{outfit.confirmed_items.map((id) => itemMap.get(id)).filter(Boolean).map((item) => item && itemName(item)).join(' · ')}</p>
             </div>
